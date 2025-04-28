@@ -45,15 +45,21 @@ class ControlNode(object):
         self.robot_pose_msg = None
         self.path_plan_msg = None
 
+        # For testing, we can bypass localization check
+        self.bypass_localization = True
+        self.localization_initialized = self.bypass_localization
+
         self.loop_rate_hz = 300
 
     def run(self):
+        print("\n=== Starting Control Node ===")
+        print(f"Localization check bypassed: {self.bypass_localization}")
         self.mqtt_subscriber.start()
         self.mqtt_publisher.run()
 
         controller = MotorControl(logger=self.logger)
+        print("Motor controller initialized")
 
-        self.localization_initialized = False
         self.target_velocity_msg = None
         self.previous_target_velocity_msg = None
         self.stopping_velocity_profile_linear = None
@@ -66,11 +72,23 @@ class ControlNode(object):
                                                    max_angular_velocity=1.5
                                                    )
         try:
+            print("\nEntering main control loop...")
+            print("Waiting for velocity commands...")
             while True:
                 start_time = time.time()
 
                 localization_initialized_msg: LOCALIZATION_INITIALIZED_MSG = self.mqtt_subscriber.get_latest_message(TOPIC_LOCALIZATION_INITIALIZED)
+                if localization_initialized_msg is not None and not self.bypass_localization:
+                    self.localization_initialized = localization_initialized_msg.initialized
+                    print(f"\nLocalization state updated: {self.localization_initialized}")
+
                 target_velocity_msg: TARGET_VELOCITY_MSG = self.mqtt_subscriber.get_latest_message(TOPIC_TARGET_VELOCITY)
+                
+                if target_velocity_msg is not None:
+                    print(f"\nReceived velocity command:")
+                    print(f"Linear: {target_velocity_msg.linear_velocity_mps:.3f} m/s")
+                    print(f"Angular: {target_velocity_msg.angular_velocity_radps:.3f} rad/s")
+                    print(f"Localization initialized: {self.localization_initialized}")
                 
                 # Update path plan message
                 path_plan_msg: PATH_PLAN_MSG = self.mqtt_subscriber.get_latest_message(TOPIC_PATH_PLAN)
@@ -135,9 +153,6 @@ class ControlNode(object):
                         target_velocity_msg.timestamp = time.time()
                         target_velocity_msg.linear_velocity_mps = 0.0
                         target_velocity_msg.angular_velocity_radps = 0.0
-
-                if localization_initialized_msg is not None:
-                    self.localization_initialized = localization_initialized_msg.initialized
 
                 if self.localization_initialized:
                     controller.set_linear_angular_velocities(target_velocity_msg.linear_velocity_mps, target_velocity_msg.angular_velocity_radps)

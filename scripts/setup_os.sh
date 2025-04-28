@@ -14,11 +14,11 @@ read -p "Do you want to reboot at the end of the script for all changes to take 
 user_input=${user_input,,}
 
 # Configure swap space because building the pip packages needs a lot of memory
-echo "Configuring swap space..."
-sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
-echo "Restarting swap service..."
-sudo /etc/init.d/dphys-swapfile stop
-sudo /etc/init.d/dphys-swapfile start
+# echo "Configuring swap space..."
+# sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
+# echo "Restarting swap service..."
+# sudo /etc/init.d/dphys-swapfile stop
+# sudo /etc/init.d/dphys-swapfile start
 
 echo "Setting the language to en_US.UTF-8..."
 # create /etc/environment if it doesnt exist 

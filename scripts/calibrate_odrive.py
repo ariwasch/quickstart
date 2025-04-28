@@ -29,10 +29,25 @@ def connect_odrive():
     """
     print("Connecting to ODrive...")
     import odrive
-    odrv = odrive.find_any(path='serial:/dev/ttyAMA1', timeout=5)
-    if odrv is None:
-        raise Exception('ODrive timed out')
-    return odrv
+    # Try first with serial port
+    try:
+        odrv = odrive.find_any(path='serial:/dev/ttyACM0', timeout=5)
+        if odrv is not None:
+            print("Connected via serial port '/dev/ttyACM0'")
+            return odrv
+    except Exception as e:
+        print(f"Serial connection failed: {e}")
+    
+    # Try with default USB path
+    try:
+        odrv = odrive.find_any(timeout=5)  # Use default path
+        if odrv is not None:
+            print("Connected via default USB")
+            return odrv
+    except Exception as e:
+        print(f"USB connection failed: {e}")
+    
+    raise Exception('ODrive timed out - unable to connect')
 
 def save_and_reboot(odrv):
     """
@@ -49,16 +64,15 @@ def save_and_reboot(odrv):
         print("Rebooting ODrive...")
         try:
             odrv.reboot()
-        except:
+        except Exception as e:
             # Exception is expected as connection is lost during reboot
-            # Close the hanging connection
-            odrv.__channel__.serial_device.close()
+            print(f"Connection lost during reboot (expected): {e}")
             
     except Exception as e:
         print(f"Error saving configuration: {e!s}")
-        return None
+        return odrv  # Return original object instead of None on error
     
-    time.sleep(1)
+    time.sleep(3)  # Give more time for ODrive to reboot
     return connect_odrive()
 
 def print_errors(error_type, error_value):

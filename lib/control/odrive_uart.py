@@ -2,14 +2,14 @@ import time
 
 import odrive.enums
 import serial
-from RPi import GPIO  # Import GPIO module
+# from RPi import GPIO  # Import GPIO module
 
 import lib.constants as CFG
 
 # GPIO setup for resetting ODrive
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(5, GPIO.OUT)
-
+# GPIO.setmode(GPIO.BCM)
+# GPIO.setup(5, GPIO.OUT)
+    
 class ODriveUART:
     """
     A class to interface with ODrive motor controllers over UART.
@@ -18,7 +18,7 @@ class ODriveUART:
     AXIS_STATE_CLOSED_LOOP_CONTROL = 8
     ERROR_DICT = {k: v for k, v in odrive.enums.__dict__.items() if k.startswith("AXIS_ERROR_")}
 
-    def __init__(self, port='/dev/ttyAMA1', left_axis=1, right_axis=0, dir_left=1, dir_right=1):
+    def __init__(self, port='/dev/ttyACM0', left_axis=1, right_axis=0, dir_left=1, dir_right=1):
         """
         Initialize the ODriveUART class with the specified parameters.
         """
@@ -387,18 +387,41 @@ class ODriveUART:
         """
         self.send_command(f'w axis{axis}.config.enable_watchdog 0')
 
-def reset_odrive():
-    """
-    Reset the ODrive by toggling the GPIO pin.
-    """
-    GPIO.output(5, GPIO.LOW)
-    time.sleep(0.1)
-    GPIO.output(5, GPIO.HIGH)
-    print("ODrive reset attempted")
+    def reboot(self):
+        """
+        Save configuration and reboot the ODrive.
+        """
+        print("Saving configuration and rebooting ODrive...")
+        return self.send_command('sr')
+
+def reset_odrive(odrive_instance=None):
+    """Reboot the ODrive using serial command 'sr' via ODriveUART."""
+    # try:
+    #     if odrive_instance:
+    #         odrive_instance.reboot()
+    #         print("ODrive rebooted using provided instance (serial)")
+    #         return True
+    #     else:
+    #         # If no instance is provided, create a temporary one using the default port from config
+    #         from lib.constants import MOTOR_CONTROL_SERIAL_PORT, MOTOR_CONTROL_LEFT_MOTOR_AXIS, MOTOR_CONTROL_RIGHT_MOTOR_AXIS, MOTOR_CONTROL_LEFT_MOTOR_DIR, MOTOR_CONTROL_RIGHT_MOTOR_DIR
+    #         uart = ODriveUART(
+    #             port=MOTOR_CONTROL_SERIAL_PORT,
+    #             left_axis=MOTOR_CONTROL_LEFT_MOTOR_AXIS,
+    #             right_axis=MOTOR_CONTROL_RIGHT_MOTOR_AXIS,
+    #             dir_left=MOTOR_CONTROL_LEFT_MOTOR_DIR,
+    #             dir_right=MOTOR_CONTROL_RIGHT_MOTOR_DIR
+    #         )
+    #         uart.reboot()
+    #         print("ODrive rebooted using serial command on default port")
+    #         uart.bus.close()
+    #         return True
+    # except Exception as e:
+    #     print(f"ODrive reboot failed (serial): {e}")
+    #     return False
 
 if __name__ == '__main__':
     # Initialize with directions for left and right motors
-    motor_controller = ODriveUART('/dev/ttyAMA1', left_axis=0, right_axis=1, dir_left=1, dir_right=-1)
+    motor_controller = ODriveUART('/dev/ttyACM0', left_axis=0, right_axis=1, dir_left=1, dir_right=-1)
 
     motor_controller.start_left()
     motor_controller.start_right()
