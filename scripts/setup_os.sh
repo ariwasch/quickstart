@@ -123,6 +123,10 @@ if ! grep -Fxq 'source ~/.venv/bin/activate' ~/.bashrc; then
     echo 'source ~/.venv/bin/activate' >> ~/.bashrc
 fi
 
+# Update pip and packaging tools
+echo "Updating pip and packaging tools..."
+pip install --upgrade pip setuptools wheel packaging
+
 echo "Installing python packages..."
 pip install --no-cache-dir -e "$HOME/quickstart"
 

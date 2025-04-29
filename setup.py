@@ -1,5 +1,7 @@
 import platform
 import subprocess
+import os
+import sys
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
@@ -25,19 +27,19 @@ dependencies = [
     "scikit-build>=0.17.6",
     "pywavemap @ git+https://github.com/ethz-asl/wavemap.git#subdirectory=library/python",
     "matplotlib>=3.9.2",
-    "rpi-hardware-pwm>=0.2.2",
+    # "rpi-hardware-pwm>=0.2.2",
     "pyserial>=3.5",
     "smbus2>=0.5.0",
     "navlie @ git+https://github.com/decargroup/navlie@main",
     "pymlg @ git+https://github.com/decargroup/pymlg@main",
     "control>=0.10.1",
     "sympy>=1.12.1",
-    "rpi-lgpio>=0.5",
+    # "rpi-lgpio>=0.5",
     "PyYAML>=6.0.1",
     "paho-mqtt>=1.6.1",
     "libtmux>=0.37.0",
-    "RPi.GPIO>=0.7.1",
-    "rpi-lgpio>=0.6",
+    # "RPi.GPIO>=0.7.1",
+    # "rpi-lgpio>=0.6",
     "ruff>=0.7.1",
     "sshkeyboard>=2.3.1"
 ]
@@ -55,6 +57,25 @@ class CustomInstallCommand(install):
     """Customized setuptools install command to patch ODrive package."""
 
     def run(self):
+        # Run additional commands before the standard install process
+        print("Upgrading pip, setuptools, wheel, and packaging...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel", "packaging"], check=True)
+        
+        print("Installing mosquitto and mosquitto-clients...")
+        try:
+            subprocess.run(["sudo", "apt-get", "install", "-y", "mosquitto", "mosquitto-clients"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Warning: Failed to install mosquitto: {e}")
+            
+        print("Running make build...")
+        try:
+            env = os.environ.copy()
+            env["CONFIG"] = "bot_quickstart"
+            env["CONFIG_MSGS"] = "bot_quickstart_msgs"
+            subprocess.run(["make", "build"], env=env, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Warning: Failed to run make build: {e}")
+        
         # Run the standard install process
         install.run(self)
         
@@ -81,7 +102,9 @@ setup(
         "control",
         "realsense",
         "rerun_viewer",
-        "imu"
+        "imu",
+        "lib",
+        "lib.*"
     ]),
     package_dir={
         "utils": "utils",

@@ -29,23 +29,24 @@ def connect_odrive():
     """
     print("Connecting to ODrive...")
     import odrive
-    # Try first with serial port
-    try:
-        odrv = odrive.find_any(path='serial:/dev/ttyACM0', timeout=5)
-        if odrv is not None:
-            print("Connected via serial port '/dev/ttyACM0'")
-            return odrv
-    except Exception as e:
-        print(f"Serial connection failed: {e}")
+    from odrive.utils import dump_errors
     
-    # Try with default USB path
+    # Try with default find_any method (no path argument)
     try:
-        odrv = odrive.find_any(timeout=5)  # Use default path
+        print("Searching for ODrive...")
+        # Increased timeout to give more time to find the device
+        odrv = odrive.find_any(timeout=10)        
+
         if odrv is not None:
-            print("Connected via default USB")
+            print("Connected to ODrive!")
+            # Dump any initial errors
+            try:
+                dump_errors(odrv, True)
+            except:
+                print("Could not check for errors, continuing anyway...")
             return odrv
     except Exception as e:
-        print(f"USB connection failed: {e}")
+        print(f"Connection failed: {str(e)}")
     
     raise Exception('ODrive timed out - unable to connect')
 
